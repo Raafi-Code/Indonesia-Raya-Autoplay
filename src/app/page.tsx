@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import RealTimeClock from "@/components/RealTimeClock";
 import ToggleButton from "@/components/ToggleButton";
 import TimeInput from "@/components/TimeInput";
+import Navbar from "@/components/Navbar";
 
 export default function Home() {
   const [isCustomTime, setIsCustomTime] = useState(false);
@@ -11,11 +12,12 @@ export default function Home() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasPlayed, setHasPlayed] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [isActivated, setIsActivated] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const wakeLockRef = useRef<any>(null);
 
   // Default play time (bisa diatur sesuai kebutuhan)
-  const defaultPlayTime = "14:15";
+  const defaultPlayTime = "09:55";
 
   // Keep screen awake - Request Wake Lock
   useEffect(() => {
@@ -72,8 +74,8 @@ export default function Home() {
 
       console.log(`Current: ${currentTime}, Target: ${targetTime}, Has Played: ${hasPlayed}`);
 
-      // Auto play jika waktu sesuai dan belum pernah dimainkan
-      if (currentTime === targetTime && !hasPlayed && audioRef.current) {
+      // Auto play jika waktu sesuai, sudah diaktivasi, dan belum pernah dimainkan
+      if (currentTime === targetTime && !hasPlayed && isActivated && audioRef.current) {
         console.log("Attempting to play audio...");
         playAudio();
         setHasPlayed(true);
@@ -91,7 +93,7 @@ export default function Home() {
     // Use shorter interval for more accuracy
     const interval = setInterval(checkTime, 1000);
     return () => clearInterval(interval);
-  }, [isCustomTime, playTime]);
+  }, [isCustomTime, playTime, isActivated]);
 
   const playAudio = async () => {
     if (audioRef.current) {
@@ -147,6 +149,23 @@ export default function Home() {
     setHasPlayed(false);
   };
 
+  // Activate auto-play: user clicks once to "unlock" audio in the browser
+  const activateAutoPlay = async () => {
+    if (audioRef.current) {
+      try {
+        // Play and immediately pause to unlock audio for future programmatic play
+        audioRef.current.muted = true;
+        await audioRef.current.play();
+        audioRef.current.pause();
+        audioRef.current.muted = false;
+        audioRef.current.currentTime = 0;
+      } catch {
+        // Even if this fails, mark as activated — the user interaction is registered
+      }
+    }
+    setIsActivated(true);
+  };
+
   // Request notification permission on mount
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
@@ -156,50 +175,78 @@ export default function Home() {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden">
+      {/* Activation Overlay */}
+      {!isActivated && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-10 max-w-md mx-4 text-center border border-transparent dark:border-gray-700/50">
+            <div className="w-20 h-20 mx-auto mb-6 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/30">
+              <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-3">Aktifkan Auto-Play</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-8">
+              Klik tombol di bawah untuk mengaktifkan pemutaran musik otomatis. Browser memerlukan interaksi pengguna terlebih dahulu untuk mengaktifkan fitur autoplay.
+            </p>
+            <button
+              onClick={activateAutoPlay}
+              className="px-10 py-4 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:shadow-2xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all duration-300 text-lg"
+            >
+              Aktifkan Sekarang
+            </button>
+          </div>
+        </div>
+      )}
+      <Navbar />
       {/* Hero Section - Full Screen */}
-      <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-cyan-50">
+      <section className="relative min-h-screen flex flex-col items-center justify-start pt-24 pb-24 lg:pb-0 bg-gradient-to-br from-orange-50 via-white to-cyan-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-500 overflow-y-auto">
         {/* Decorative Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/10 rounded-full blur-3xl"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-r from-primary/5 to-secondary/5 rounded-full blur-3xl"></div>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none fixed">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 dark:bg-primary/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/10 dark:bg-secondary/5 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-r from-primary/5 to-secondary/5 dark:from-primary/5 dark:to-secondary/5 rounded-full blur-3xl"></div>
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 py-12">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 flex-1 flex flex-col justify-center">
           {/* Header */}
-                  <div className="text-center mb-16 animate-fade-in">
-            <h1 className="text-6xl md:text-7xl font-bold text-gray-800 mb-4 tracking-tight">
-              Auto Play Indonesia Raya
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto">
-              Putar musik secara otomatis pada waktu yang ditentukan
-            </p>
+          <div className="flex justify-center mb-6 sm:mb-8 animate-fade-in relative z-10 pt-2 sm:pt-4">
+            <div className="inline-flex items-center gap-2 sm:gap-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md px-4 sm:px-8 py-3 sm:py-4 rounded-2xl sm:rounded-3xl shadow-xl border border-white/50 dark:border-gray-700/50 hover:shadow-2xl transition-all duration-300">
+              <div className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-primary"></span>
+              </div>
+              <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent tracking-tight">
+                BNI Auto Play Indonesia Raya
+              </h1>
+            </div>
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid lg:grid-cols-2 gap-12 items-start mb-16">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start mb-12 sm:mb-16">
             {/* Left Column - Clock & Controls */}
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               {/* Real Time Clock Card */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-10 border border-gray-100/50 hover:shadow-3xl transition-all duration-300">
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-10 border border-gray-100/50 dark:border-gray-700/50 hover:shadow-3xl transition-all duration-300">
                 <div className="mb-4 flex items-center justify-center gap-3">
                   <div className="relative">
                     <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
                     <div className="absolute inset-0 w-3 h-3 bg-primary rounded-full animate-ping opacity-75"></div>
                   </div>
-                  <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-widest">
+                  <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
                     Real Time
                   </h2>
                   <svg className="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <RealTimeClock />
+                <div className="dark:text-white">
+                  <RealTimeClock />
+                </div>
               </div>
 
               {/* Mode Toggle Card */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-gray-100/50">
-                <h3 className="flex items-center justify-center gap-2 text-sm font-semibold text-gray-500 uppercase tracking-widest mb-6">
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-gray-100/50 dark:border-gray-700/50">
+                <h3 className="flex items-center justify-center gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-6">
                   <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                   </svg>
@@ -209,7 +256,7 @@ export default function Home() {
               </div>
 
               {/* Time Input Card */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-gray-100/50">
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-gray-100/50 dark:border-gray-700/50">
                 <TimeInput
                   value={isCustomTime ? playTime : defaultPlayTime}
                   onChange={handleTimeChange}
@@ -347,7 +394,7 @@ export default function Home() {
               </div>
 
               {/* Info Card */}
-              <div className="mt-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-gray-100/50">
+              <div className="mt-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-gray-100/50 dark:border-gray-700/50">
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -355,8 +402,8 @@ export default function Home() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-800 mb-2">Panduan Penggunaan</h3>
-                    <ul className="text-sm text-gray-600 space-y-1.5">
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Panduan Penggunaan</h3>
+                    <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1.5">
                       <li>• <strong>Default:</strong> Musik auto-play pada {defaultPlayTime}</li>
                       <li>• <strong>Custom Time:</strong> Atur waktu sendiri</li>
                     </ul>
@@ -368,9 +415,31 @@ export default function Home() {
         </div>
 
         {/* Footer */}
-        <div className="absolute bottom-6 left-0 right-0">
-          <div className="text-center text-gray-500 text-sm">
-            <p>© 2025 Unit Logistic - BNI Banjarmasin</p>
+        <div className="absolute bottom-6 left-0 right-0 z-10 w-full px-4 sm:px-6">
+          <div className="text-center text-gray-600 dark:text-gray-400 text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 bg-white/60 dark:bg-gray-900/60 backdrop-blur-md max-w-fit mx-auto px-4 sm:px-6 py-2 sm:py-2.5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
+            <p className="font-medium tracking-wide">&copy; 2026 BLH - BNI KCU Banjarmasin</p>
+            <span className="hidden md:inline-block w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700"></span>
+            <p className="flex items-center gap-1">
+              Developed by{" "}
+              <a
+                href="https://www.linkedin.com/in/muhammad-rafi17/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-primary hover:underline hover:text-orange-600 transition-colors"
+              >
+                Muhammad Rafi
+              </a>{" "}
+              <span className="text-gray-300 dark:text-gray-700 mx-1">|</span>{" "}
+              <a
+                href="https://Ryurex.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-gray-800 dark:text-gray-200 hover:underline hover:text-gray-600 dark:hover:text-gray-400 transition-colors inline-flex items-center gap-1.5"
+              >
+                <img src="/ryurex-logo.png" alt="Ryurex Logo" className="h-4 w-auto object-contain" />
+                <span>Ryurex Corporation</span>
+              </a>
+            </p>
           </div>
         </div>
       </section>

@@ -138,7 +138,7 @@ export default function TimeInput({
             disabled={disabled}
             className={`p-2 rounded-xl transition-all duration-200 ${
               disabled
-                ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                ? "bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600 cursor-not-allowed"
                 : "bg-gradient-to-br from-primary to-primary/80 text-white hover:shadow-lg hover:scale-110 active:scale-95"
             }`}
           >
