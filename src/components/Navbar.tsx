@@ -3,6 +3,7 @@
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 
 export default function Navbar() {
   const { theme, setTheme } = useTheme();
@@ -43,14 +44,13 @@ export default function Navbar() {
         <div className="flex items-center gap-2 sm:gap-3 pr-2">
           {/* Contact Button */}
           <Link
-            href="https://wa.me/082252877171"
+            href="https://wa.me/6282252877171"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-2 sm:px-5 sm:py-2.5 rounded-[1.5rem] bg-[#25D366] hover:bg-[#128C7E] transition-all shadow-sm shadow-green-500/20 hover:shadow-green-500/40 flex items-center gap-2 group"
+            className="p-2.5 sm:p-3 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all hover:scale-105 active:scale-95"
             title="Support via WhatsApp"
           >
-            <img src="/whatsapp.png" alt="WhatsApp" className="w-5 h-5 object-contain group-hover:scale-110 transition-transform" />
-            <span className="hidden lg:block text-white text-sm font-bold tracking-wide">Contact</span>
+            <MessageCircle className="w-5 h-5" />
           </Link>
 
           {/* Theme Toggle */}
